@@ -46,6 +46,7 @@ class Rclone(CheckRclone):
     def __init__(self):
         self.rclone = super().__call__(shutil.which('rclone'))
         self.unit = 'MB'
+        self._debug = False
 
     def size_units(self, s, mult):
         if 'KiB' in s:
@@ -92,12 +93,19 @@ class Rclone(CheckRclone):
                 elif 'error' in s:
                     pbar.write(s)
 
-    def process(self, subcommand, from_, to='', progress=True, _execute=False):
+    def process(self,
+                subcommand,
+                from_,
+                to='',
+                progress=True,
+                _execute=False,
+                *args):
         if subcommand in ['size', 'ls', 'lsjson'] or _execute:
             progress = False
             P = ''
         else:
             P = '-P'
+
         if subcommand in ['copy', 'move'] and from_ and not to:
             raise MissingDestination(
                 'The command requires passing a destination.')
@@ -105,7 +113,13 @@ class Rclone(CheckRclone):
         if subcommand == 'ls':
             subcommand = 'lsf'
 
-        p = subprocess.Popen(f'{self.rclone} {subcommand} {from_} {to} {P}',
+        _args = " ".join(args)
+        _command = f'{self.rclone} {subcommand} {from_} {to} {P} {_args}'
+
+        if self._debug:
+            logger.debug(_command)
+
+        p = subprocess.Popen(_command,
                              shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
@@ -116,12 +130,16 @@ class Rclone(CheckRclone):
         OUT = p.communicate()[0].decode()
 
         if subcommand == 'size':
-            total_objects = int(OUT.split('Total objects: ')[1].split(' (')[1].split(')')[0])
-            total_size = int(OUT.split('Total size: ')[1].split(' (')[1].split(')')[0].split(' Byte')[0])            
+            total_objects = int(
+                OUT.split('Total objects: ')[1].split(' (')[1].split(')')[0])
+            total_size = int(
+                OUT.split('Total size: ')[1].split(' (')[1].split(')')
+                [0].split(' Byte')[0])
             return {'total_objects': total_objects, 'total_size': total_size}
 
         if subcommand == 'lsjson':
             return json.loads(OUT)
+
         elif subcommand == 'lsf':
             return OUT.rstrip().split('\n')
 

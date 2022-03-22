@@ -19,18 +19,23 @@ from rclone import rclone
 
 pathname = 'gdrive:/remote/path'  # you can also use a local path
 
+
 rclone.copy('foo.txt', pathname)
 # 100%|███████████████████████████████████████| 0.16/0.16 [00:00<00:00,  1.13MB/s]
 
+
 rclone.move('bar.bin', pathname)
 # 100%|███████████████████████████████████████| 0.16/0.16 [00:00<00:00,  1.34MB/s]
+
 
 rclone.unit = 'B'
 rclone.copy('foo.txt', pathname)
 # 100%|███████████████████████████| 159414.0/159414.0 [00:00<00:00, 1003822.00B/s]
 
+
 rclone.ls(pathname)
-# ['foo.bin', 'bar.txt']
+# ['foo.bin', 'bar.txt', 'foo/']
+
 
 rclone.lsjson(pathname)
 # [
@@ -43,6 +48,11 @@ rclone.lsjson(pathname)
 #         'IsDir': False
 #     }
 # ]
+
+
+rclone.ls('/some/path', '-R')  # you can supply additional flags to any command as positional argments
+# ['foo.bin', 'bar.txt', 'foo/', 'foo/foo1.txt', 'foo/foo2', 'foo/bar/foobar.txt']
+
 
 rclone.size('/some/path')
 # {'total_objects': 5, 'total_size': 170397}
