@@ -45,6 +45,7 @@ class Rclone(CheckRclone):
 
     def __init__(self):
         self.rclone = super().__call__(shutil.which('rclone'))
+        self.unit = 'MB'
 
     def size_units(self, s, mult):
         if 'KiB' in s:
@@ -55,8 +56,8 @@ class Rclone(CheckRclone):
             s = round(float(s.split(' GiB')[0]) * 1.074e+9 / mult, 2)
         return s
 
-    def stream_process(self, p, local_path, unit='MB'):
-        if unit == 'MB':
+    def stream_process(self, p, local_path):
+        if self.unit == 'MB':
             mult = 1e+6
         else:
             mult = 1
@@ -70,7 +71,6 @@ class Rclone(CheckRclone):
                     size += Path(x).stat().st_size
                 except FileNotFoundError:
                     continue
-
             size = round(size) / mult
 
         else:
@@ -78,7 +78,7 @@ class Rclone(CheckRclone):
 
         stream = p.poll() is None
         warnings.filterwarnings('ignore', message='clamping frac to range')
-        with tqdm(total=size, unit=unit) as pbar:
+        with tqdm(total=size, unit=self.unit) as pbar:
             prog = 0
             for line in p.stdout:
                 s = line.decode()
@@ -89,17 +89,11 @@ class Rclone(CheckRclone):
                     if isinstance(s, float):
                         pbar.update(s - prog)
                         prog = s
-                elif 'Total size:' in s:
-                    if prog == 0:
-                        pbar.update(size)
-                    pbar.write(s)
-                    globals()['total_size'] = int(
-                        s.split('(')[1].split(' ')[0])
                 elif 'error' in s:
                     pbar.write(s)
 
     def process(self, subcommand, from_, to='', progress=True, _execute=False):
-        if subcommand in ['ls', 'lsjson'] or _execute:
+        if subcommand in ['size', 'ls', 'lsjson'] or _execute:
             progress = False
             P = ''
         else:
@@ -119,16 +113,20 @@ class Rclone(CheckRclone):
             while self.stream_process(p, from_):
                 time.sleep(0.1)
 
+        OUT = p.communicate()[0].decode()
+
         if subcommand == 'size':
-            return total_size
+            total_objects = int(OUT.split('Total objects: ')[1].split(' (')[1].split(')')[0])
+            total_size = int(OUT.split('Total size: ')[1].split(' (')[1].split(')')[0].split(' Byte')[0])            
+            return {'total_objects': total_objects, 'total_size': total_size}
 
         if subcommand == 'lsjson':
-            return json.loads(p.communicate()[0].decode())
-        elif subcommand == 'ls':
-            return p.communicate()[0].decode().rstrip().split('\n')
+            return json.loads(OUT)
+        elif subcommand == 'lsf':
+            return OUT.rstrip().split('\n')
 
         elif _execute:
-            return p.communicate()[0].decode().rstrip().replace('\t', ' ')
+            return OUT.rstrip().replace('\t', ' ')
 
     def execute(self, command):
         return self.process(subcommand=command,
