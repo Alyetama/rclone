@@ -160,6 +160,6 @@ class Rclone(CheckRclone):
     def __getattr__(self, attr):
 
         def wrapper(*args, **kwargs):
-            return self.process(attr, *args)
+            return self.process(attr, *args, **kwargs)
 
         return wrapper
