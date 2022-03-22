@@ -1,0 +1,17 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "rclone"
+authors = [{name = "Alyetama", email = "56323389+Alyetama@users.noreply.github.com"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+dependencies = [
+    "loguru >=0.5.3",
+    "tqdm >=4.62.3"
+]
+
+[project.urls]
+Home = "https://github.comm/Alyetama/rclone"
