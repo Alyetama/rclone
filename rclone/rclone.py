@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 import json
 import shutil
 import subprocess
@@ -8,6 +11,8 @@ from pathlib import Path
 
 from loguru import logger
 from tqdm import tqdm
+
+__version__ = '0.4.0'
 
 
 class MissingDestination(Exception):
@@ -29,8 +34,8 @@ class CheckRclone:
                     rclone = f.read().rstrip()
             else:
                 logger.warning(
-                    'Could not find rclone in your PATH. Enter it manually and the program will remember it.'
-                )
+                    'Could not find rclone in your PATH. Enter it manually '
+                    'and the program will remember it.')
                 rclone = input('Path to rclone binary: ')
                 if not Path(rclone).exists():
                     logger.error('The rclone path you entered does not exist.')
@@ -48,7 +53,7 @@ class Rclone(CheckRclone):
         self.unit = 'MB'
         self._debug = False
 
-    def size_units(self, s, mult):
+    def _size_units(self, s, mult):
         if 'KiB' in s:
             s = round(float(s.split(' KiB')[0]) * 1024 / mult, 2)
         elif 'MiB' in s:
@@ -57,7 +62,7 @@ class Rclone(CheckRclone):
             s = round(float(s.split(' GiB')[0]) * 1.074e+9 / mult, 2)
         return s
 
-    def stream_process(self, p, local_path):
+    def _stream_process(self, p, local_path):
         if self.unit == 'MB':
             mult = 1e+6
         else:
@@ -86,20 +91,20 @@ class Rclone(CheckRclone):
                 if 'Transferred' in s and 'ETA' in s:
                     s = s.split('Transferred:')[1].split(
                         '\t')[1].lstrip().split(' / ')[0]
-                    s = self.size_units(s, mult)
+                    s = self._size_units(s, mult)
                     if isinstance(s, float):
                         pbar.update(s - prog)
                         prog = s
                 elif 'error' in s:
                     pbar.write(s)
 
-    def process(self,
-                subcommand,
-                from_,
-                to='',
-                progress=True,
-                _execute=False,
-                *args):
+    def _process(self,
+                 subcommand,
+                 from_,
+                 to='',
+                 progress=True,
+                 _execute=False,
+                 *args):
         if subcommand in ['size', 'ls', 'lsjson'] or _execute:
             progress = False
             P = ''
@@ -124,7 +129,7 @@ class Rclone(CheckRclone):
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         if progress:
-            while self.stream_process(p, from_):
+            while self._stream_process(p, from_):
                 time.sleep(0.1)
 
         OUT = p.communicate()[0].decode()
@@ -147,19 +152,19 @@ class Rclone(CheckRclone):
             return OUT.rstrip().replace('\t', ' ')
 
     def execute(self, command):
-        return self.process(subcommand=command,
-                            from_='',
-                            to='',
-                            progress=False,
-                            _execute=True)
+        return self._process(subcommand=command,
+                             from_='',
+                             to='',
+                             progress=False,
+                             _execute=True)
 
     def delete(*args, **kwargs):
         raise NotImplementedError(
-            'delete is a protected command! Use `execute("...")` instead.')
+            'delete is a protected command! Use `execute()` instead.')
 
     def __getattr__(self, attr):
 
         def wrapper(*args, **kwargs):
-            return self.process(attr, *args, **kwargs)
+            return self._process(attr, *args, **kwargs)
 
         return wrapper

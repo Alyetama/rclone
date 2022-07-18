@@ -1,17 +1,18 @@
-[build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
-
-[project]
+[tool.poetry]
 name = "rclone"
-authors = [{name = "Alyetama", email = "56323389+Alyetama@users.noreply.github.com"}]
-license = {file = "LICENSE"}
-classifiers = ["License :: OSI Approved :: MIT License"]
-dynamic = ["version", "description"]
-dependencies = [
-    "loguru >=0.5.3",
-    "tqdm >=4.62.3"
-]
+version = "0.4.0"
+description = "Python wrapper for rclone"
+authors = ["Alyetama <56323389+Alyetama@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
 
-[project.urls]
-Home = "https://github.comm/Alyetama/rclone"
+[tool.poetry.dependencies]
+python = "^3.6"
+loguru = ">=0.5.3"
+tqdm = ">=4.62.3"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
