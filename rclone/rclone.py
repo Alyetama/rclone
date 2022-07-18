@@ -12,7 +12,7 @@ from pathlib import Path
 from loguru import logger
 from tqdm import tqdm
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 
 class MissingDestination(Exception):
@@ -48,10 +48,10 @@ class CheckRclone:
 
 class Rclone(CheckRclone):
 
-    def __init__(self):
+    def __init__(self, unit='B', debug=False):
         self.rclone = super().__call__(shutil.which('rclone'))
-        self.unit = 'MB'
-        self._debug = False
+        self.unit = unit
+        self.debug = debug
 
     def _size_units(self, s, mult):
         if 'KiB' in s:
@@ -62,25 +62,29 @@ class Rclone(CheckRclone):
             s = round(float(s.split(' GiB')[0]) * 1.074e+9 / mult, 2)
         return s
 
-    def _stream_process(self, p, local_path):
+    def _stream_process(self, p, dst):
         if self.unit == 'MB':
             mult = 1e+6
         else:
             mult = 1
 
-        if Path(local_path).is_dir():
-            files = glob(f'{local_path}/**/*', recursive=True)
+        if Path(dst).exists():
+            if Path(dst).is_dir():
+                files = glob(f'{dst}/**/*', recursive=True)
 
-            size = 0
-            for x in files:
-                try:
-                    size += Path(x).stat().st_size
-                except FileNotFoundError:
-                    continue
-            size = round(size) / mult
+                size = 0
+                for x in files:
+                    try:
+                        size += Path(x).stat().st_size
+                    except FileNotFoundError:
+                        continue
+                size = round(size) / mult
+
+            else:
+                size = round(Path(dst).stat().st_size / mult, 2)
 
         else:
-            size = round(Path(local_path).stat().st_size / mult, 2)
+            size = 0
 
         stream = p.poll() is None
         warnings.filterwarnings('ignore', message='clamping frac to range')
@@ -118,10 +122,10 @@ class Rclone(CheckRclone):
         if subcommand == 'ls':
             subcommand = 'lsf'
 
-        _args = " ".join(args)
+        _args = ' '.join(args)
         _command = f'{self.rclone} {subcommand} {from_} {to} {P} {_args}'
 
-        if self._debug:
+        if self.debug:
             logger.debug(_command)
 
         p = subprocess.Popen(_command,
