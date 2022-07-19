@@ -68,23 +68,19 @@ class Rclone(CheckRclone):
         else:
             mult = 1
 
-        if Path(dst).exists():
-            if Path(dst).is_dir():
-                files = glob(f'{dst}/**/*', recursive=True)
+        if Path(dst).is_dir():
+            files = glob(f'{dst}/**/*', recursive=True)
 
-                size = 0
-                for x in files:
-                    try:
-                        size += Path(x).stat().st_size
-                    except FileNotFoundError:
-                        continue
-                size = round(size) / mult
-
-            else:
-                size = round(Path(dst).stat().st_size / mult, 2)
+            size = 0
+            for x in files:
+                try:
+                    size += Path(x).stat().st_size
+                except FileNotFoundError:
+                    continue
+            size = round(size) / mult
 
         else:
-            size = 0
+            size = round(Path(dst).stat().st_size / mult, 2)
 
         stream = p.poll() is None
         warnings.filterwarnings('ignore', message='clamping frac to range')
@@ -109,7 +105,9 @@ class Rclone(CheckRclone):
                  progress=True,
                  _execute=False,
                  *args):
-        if subcommand in ['size', 'ls', 'lsjson'] or _execute:
+        if subcommand not in [
+                'copy', 'move', 'sync', 'bisync', 'copyto', 'copyurl'
+        ] or _execute or not Path(from_).exists():
             progress = False
             P = ''
         else:
@@ -123,6 +121,7 @@ class Rclone(CheckRclone):
             subcommand = 'lsf'
 
         _args = ' '.join(args)
+
         _command = f'{self.rclone} {subcommand} {from_} {to} {P} {_args}'
 
         if self.debug:
@@ -154,6 +153,12 @@ class Rclone(CheckRclone):
 
         elif _execute:
             return OUT.rstrip().replace('\t', ' ')
+
+        elif subcommand == 'config' and 'file' in _command:
+            return OUT.strip().split('\n')[-1]
+
+        else:
+            return OUT
 
     def execute(self, command):
         return self._process(subcommand=command,
