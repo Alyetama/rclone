@@ -12,7 +12,7 @@ from pathlib import Path
 from loguru import logger
 from tqdm import tqdm
 
-__version__ = '0.4.1'
+__version__ = '0.4.3'
 
 
 class MissingDestination(Exception):
@@ -107,7 +107,7 @@ class Rclone(CheckRclone):
                  *args):
         if subcommand not in [
                 'copy', 'move', 'sync', 'bisync', 'copyto', 'copyurl'
-        ] or _execute or not Path(from_).exists():
+        ] or _execute or not Path(to).exists():
             progress = False
             P = ''
         else:

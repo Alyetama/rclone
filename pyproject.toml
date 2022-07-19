@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rclone"
-version = "0.4.2"
+version = "0.4.3"
 description = "Python wrapper for rclone"
 authors = ["Alyetama <56323389+Alyetama@users.noreply.github.com>"]
 license = "MIT"
